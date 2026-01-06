@@ -320,8 +320,8 @@
       <h1 class="title">MSC Body Transformation</h1>
       <h1>Kalkulator Berat Badan Ideal</h1>
       <p class="subtitle">
-        Hitung <b>berat badan ideal </b> dari tinggi badan & gender.
-        Isi <b>berat badan</b> untuk melihat <b>selisih</b> dan menghitung <b>BMI (Asia-Pasifik)</b>.
+        Hitung <b>berat badan ideal</b> dari tinggi badan & gender.
+        Isi <b>berat badan</b> untuk melihat <b>berat yang perlu diturunkan/naikkan</b> dan menghitung <b>BMI (Asia-Pasifik)</b>.
       </p>
     </div>
 
@@ -392,20 +392,14 @@
             <div class="v mono" id="idealBig">—</div>
           </div>
 
-          <div class="item">
-            <div class="left">
-              <div class="name">Rumus yang dipakai</div>
-              <div class="desc" id="formulaDesc">—</div>
-            </div>
-            <div class="val mono" id="formulaShort">—</div>
-          </div>
+          <!-- REMOVED: Rumus yang dipakai -->
 
-          <div class="item">
+          <div class="item" id="deltaCard">
             <div class="left">
-              <div class="name">Selisih dari berat ideal</div>
-              <div class="desc" id="diffDesc">Isi berat badan untuk melihat selisih.</div>
+              <div class="name" id="deltaTitle">Berat yang perlu diturunkan/naikkan</div>
+              <div class="desc" id="deltaDesc">Isi berat badan untuk melihat target.</div>
             </div>
-            <div class="val mono" id="diffVal">—</div>
+            <div class="val mono" id="deltaVal">—</div>
           </div>
 
           <!-- BMI CARD -->
@@ -464,7 +458,6 @@
       return s.replace(/\.0+$/,"").replace(/(\.\d*[1-9])0+$/,"$1");
     }
     const kgToStr = (kg) => `${fmt(kg, 1)} kg`;
-
     const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
 
     // Digits only for integer inputs
@@ -511,7 +504,6 @@
     }
 
     // Asia-Pacific categories:
-    // Underweight <18.5, Normal 18.5–22.9, Overweight 23–24.9, Obesity I 25–29.9, Obesity II >=30
     function bmiCategoryAsiaPacific(bmi){
       if (bmi < 18.5) return { label: "Kurus", msg: "Fokus tingkatkan asupan bergizi dan pola hidup sehat." };
       if (bmi < 23)   return { label: "Normal", msg: "Bagus! Pertahankan pola makan & aktivitas rutin." };
@@ -541,12 +533,13 @@
     // Results elements
     const idealBigEl = $("idealBig");
     const miniMetaEl = $("miniMeta");
-    const formulaDescEl = $("formulaDesc");
-    const formulaShortEl = $("formulaShort");
-    const diffDescEl = $("diffDesc");
-    const diffValEl = $("diffVal");
     const warnEl = $("ageWarning");
     const btnPdf = $("btnPdf");
+
+    // Delta UI (replaces old diff/formula)
+    const deltaTitleEl = $("deltaTitle");
+    const deltaDescEl = $("deltaDesc");
+    const deltaValEl = $("deltaVal");
 
     // BMI UI
     const bmiTitleEl = $("bmiTitle");
@@ -624,6 +617,12 @@
       bmiMsgEl.textContent = "Isi berat badan untuk menampilkan BMI.";
     }
 
+    function setDeltaEmpty(){
+      deltaTitleEl.textContent = "Berat yang perlu diturunkan/naikkan";
+      deltaValEl.textContent = "—";
+      deltaDescEl.textContent = "Isi berat badan untuk melihat target.";
+    }
+
     function calculate(){
       const gender = genderEl.value;
       const age = readInt(ageEl);
@@ -632,36 +631,34 @@
       if (!v) return;
 
       const { heightCm, weightKg } = v;
-
       const ideal = brocaIdealKg(gender, heightCm);
 
       miniMetaEl.textContent = `${heightCm} cm • ${gender === "male" ? "Pria" : "Wanita"}`;
       idealBigEl.textContent = kgToStr(ideal);
 
-      if (gender === "male") {
-        formulaDescEl.textContent = "Pria: Berat ideal = (Tinggi badan − 100).";
-        formulaShortEl.textContent = "TB−100";
-      } else {
-        formulaDescEl.textContent = "Wanita: Berat ideal = (Tinggi badan − 100) × 0.9.";
-        formulaShortEl.textContent = "(TB−100)×0.9";
-      }
-
-      // Diff
+      // Delta / target change (requested)
       if (weightKg == null) {
-        diffValEl.textContent = "—";
-        diffDescEl.textContent = "Isi berat badan untuk melihat selisih.";
+        setDeltaEmpty();
       } else {
-        const diff = weightKg - ideal; // + berarti di atas ideal
-        const abs = Math.abs(diff);
+        // change = ideal - current
+        // negative => must lose weight (e.g. -11 kg)
+        // positive => must gain weight (e.g. +4 kg)
+        const change = ideal - weightKg;
+        const rounded = Math.round(change * 10) / 10; // 1 decimal
+        const abs = Math.abs(rounded);
+
         if (abs < 0.05) {
-          diffValEl.textContent = "0";
-          diffDescEl.textContent = "Berat kamu sangat dekat dengan estimasi ideal.";
-        } else if (diff > 0) {
-          diffValEl.textContent = `+${kgToStr(abs)}`;
-          diffDescEl.textContent = "Berat kamu di atas estimasi ideal (versi Broca).";
+          deltaTitleEl.textContent = "Target berat";
+          deltaValEl.textContent = "0 kg";
+          deltaDescEl.textContent = "Berat kamu sudah sangat dekat dengan estimasi ideal.";
+        } else if (rounded < 0) {
+          deltaTitleEl.textContent = "Berat yang harus diturunkan";
+          deltaValEl.textContent = `-${kgToStr(abs)}`; // IMPORTANT: show negative like -11 kg
+          deltaDescEl.textContent = "Agar mendekati estimasi ideal, kamu perlu menurunkan berat.";
         } else {
-          diffValEl.textContent = `-${kgToStr(abs)}`;
-          diffDescEl.textContent = "Berat kamu di bawah estimasi ideal (versi Broca).";
+          deltaTitleEl.textContent = "Berat yang harus dinaikkan";
+          deltaValEl.textContent = `+${kgToStr(abs)}`;
+          deltaDescEl.textContent = "Agar mendekati estimasi ideal, kamu perlu menaikkan berat.";
         }
       }
 
@@ -686,17 +683,17 @@
       const showWarn = Number.isFinite(age) && age > 0 && age < 18;
       warnEl.style.display = showWarn ? "inline-flex" : "none";
 
-      // enable PDF
+      // enable PDF (updated fields)
       lastResult = {
         age: Number.isFinite(age) && age > 0 ? age : null,
         gender: gender === "male" ? "Pria" : "Wanita",
         heightCm,
         weightKg,
         idealKg: ideal,
-        diffKg: weightKg == null ? null : (weightKg - ideal),
+        // store target change: ideal - current (negative=lose)
+        targetChangeKg: weightKg == null ? null : (ideal - weightKg),
         bmi: weightKg == null ? null : (Math.round(bmiValue(heightCm, weightKg) * 10) / 10),
         bmiCat: weightKg == null ? null : bmiCategoryAsiaPacific(Math.round(bmiValue(heightCm, weightKg) * 10) / 10).label,
-        formula: gender === "male" ? "TB - 100" : "(TB - 100) x 0.9",
         createdAt: new Date()
       };
       btnPdf.disabled = false;
@@ -710,10 +707,8 @@
 
       miniMetaEl.textContent = "—";
       idealBigEl.textContent = "—";
-      formulaDescEl.textContent = "—";
-      formulaShortEl.textContent = "—";
-      diffValEl.textContent = "—";
-      diffDescEl.textContent = "Isi berat badan untuk melihat selisih.";
+
+      setDeltaEmpty();
 
       bmiTitleEl.textContent = "BMI (Asia-Pasifik)";
       bmiMetaEl.textContent = "—";
@@ -757,7 +752,7 @@
 
       doc.setFont("helvetica", "bold");
       doc.setFontSize(16);
-      doc.text("Ideal Weight Report (Broca + BMI)", marginX, y);
+      doc.text("MSC Body Transformation - Report", marginX, y);
 
       doc.setFont("helvetica", "normal");
       doc.setFontSize(11);
@@ -784,17 +779,17 @@
 
       doc.setFont("helvetica", "normal");
       y += 7;
-      doc.text(`Rumus: ${lastResult.formula}`, marginX, y);
-      y += 6;
       doc.text(`Berat ideal (Broca): ${fmt(lastResult.idealKg, 1)} kg`, marginX, y);
 
       y += 6;
-      if (lastResult.diffKg == null) {
-        doc.text("Selisih dari berat ideal: - (berat badan tidak diisi)", marginX, y);
+      if (lastResult.targetChangeKg == null) {
+        doc.text("Target perubahan berat: - (berat badan tidak diisi)", marginX, y);
       } else {
-        const diff = lastResult.diffKg;
-        const sign = diff > 0 ? "+" : diff < 0 ? "-" : "";
-        doc.text(`Selisih dari berat ideal: ${sign}${fmt(Math.abs(diff), 1)} kg`, marginX, y);
+        const change = Math.round(lastResult.targetChangeKg * 10) / 10;
+        const abs = Math.abs(change);
+        const sign = change > 0 ? "+" : change < 0 ? "-" : "";
+        const label = change < 0 ? "Berat yang harus diturunkan" : change > 0 ? "Berat yang harus dinaikkan" : "Target berat";
+        doc.text(`${label}: ${sign}${fmt(abs, 1)} kg`, marginX, y);
       }
 
       y += 10;
@@ -820,7 +815,7 @@
         { maxWidth: 180 }
       );
 
-      const filename = `ideal-weight_broca-bmi_${lastResult.heightCm}cm_${lastResult.gender.toLowerCase()}_${formatDateTime(lastResult.createdAt).replace(/[: ]/g,"-")}.pdf`;
+      const filename = `msc_report_${lastResult.heightCm}cm_${lastResult.gender.toLowerCase()}_${formatDateTime(lastResult.createdAt).replace(/[: ]/g,"-")}.pdf`;
       doc.save(filename);
     }
 
@@ -831,6 +826,9 @@
 
     $("btnReset").addEventListener("click", resetAll);
     $("btnPdf").addEventListener("click", downloadPdf);
+
+    // init
+    setDeltaEmpty();
   </script>
 </body>
 </html>
