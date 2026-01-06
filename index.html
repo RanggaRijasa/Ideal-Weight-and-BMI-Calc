@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Ideal Weight & BMI Calculator</title>
+  <title>MSC Ideal Body Weight Calculator</title>
 
   <!-- Poppins -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -35,7 +35,7 @@
       min-height:100vh;
       padding:32px 16px;
     }
-    .wrap{ max-width: 1020px; margin: 0 auto; }
+    .wrap{ max-width: 980px; margin: 0 auto; }
     .header{ margin-bottom:18px; }
     .title{
       font-size: clamp(24px, 3vw, 34px);
@@ -47,7 +47,7 @@
     .subtitle{
       margin:10px 0 0 0;
       color:var(--muted);
-      max-width: 70ch;
+      max-width: 80ch;
       font-size: 14px;
     }
 
@@ -136,13 +136,14 @@
       font-weight: 800;
       cursor:pointer;
       font-size: 14px;
-      transition: transform .06s ease, filter .12s ease;
+      transition: transform .06s ease, filter .12s ease, opacity .12s ease;
       display:inline-flex;
       align-items:center;
       justify-content:center;
       gap:10px;
     }
     button:active{ transform: translateY(1px); }
+    button[disabled]{ opacity:.55; cursor:not-allowed; }
     .primary{
       color: white;
       background: linear-gradient(135deg, var(--accent), #FF9157);
@@ -188,14 +189,14 @@
       flex-wrap:wrap;
     }
     .big .v{
-      font-size: clamp(22px, 3vw, 28px);
+      font-size: clamp(22px, 3vw, 30px);
       font-weight: 900;
       letter-spacing:-.4px;
     }
 
     .item{
       display:flex;
-      align-items:center;
+      align-items:flex-start;
       justify-content:space-between;
       gap: 12px;
       padding: 14px 14px;
@@ -203,11 +204,12 @@
       background: rgba(255,255,255,.78);
       border: 1px solid var(--line);
     }
-    .item .left{ display:flex; flex-direction:column; gap:2px; min-width:0; }
+    .item .left{ display:flex; flex-direction:column; gap:4px; min-width:0; }
     .item .name{ font-weight: 900; font-size: 14px; line-height:1.2; }
-    .item .desc{ font-size: 12px; color: var(--muted); }
+    .item .desc{ font-size: 12px; color: var(--muted); line-height:1.35; }
     .item .val{ font-weight: 900; font-size: 14px; white-space: nowrap; }
 
+    /* BMI card */
     .bmi-card{
       padding: 16px 16px;
       border-radius: 20px;
@@ -239,7 +241,7 @@
     }
     .seg{ height:100%; float:left; }
 
-    /* Asia-Pasifik visual scale 12..40:
+    /* Visual scale only (12..40):
        12–18.5 under | 18.5–22.9 normal | 22.9–24.9 overweight | 24.9–40 obese+ */
     .s1{ width: 23%; background: #ff4d4f; }
     .s2{ width: 15%; background: #91c55b; }
@@ -278,6 +280,12 @@
       color: var(--muted);
       line-height: 1.45;
     }
+    .bmi-foot{
+      margin-top: 8px;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.45;
+    }
 
     .badge{
       display:inline-flex;
@@ -309,9 +317,11 @@
 <body>
   <div class="wrap">
     <div class="header">
-      <h1 class="title">Ideal Weight & BMI Calculator</h1>
+      <h1 class="title">MSC Body Transformation</h1>
+      <h1>Kalkulator Berat Badan Ideal</h1>
       <p class="subtitle">
-        Masukkan tinggi + berat untuk menghitung <b>BMI</b>, serta estimasi <b>berat ideal </b> dan rentang berat dari <b>BMI normal (Asia-Pasifik)</b>.
+        Hitung <b>berat badan ideal </b> dari tinggi badan & gender.
+        Isi <b>berat badan</b> untuk melihat <b>selisih</b> dan menghitung <b>BMI (Asia-Pasifik)</b>.
       </p>
     </div>
 
@@ -320,7 +330,7 @@
       <section class="card" aria-label="Input">
         <div class="card-head">
           <p class="card-title">Masukkan data</p>
-          <p class="card-note">Klik tombol <b>Hitung</b> untuk menampilkan hasil.</p>
+          <p class="card-note">Klik tombol <b>Hitung</b> untuk menampilkan hasil. Lalu bisa <b>Download PDF</b>.</p>
         </div>
 
         <div class="card-body">
@@ -352,7 +362,6 @@
               <div class="field">
                 <label for="weightKg">Berat badan</label>
                 <div class="unitbox">
-                  <!-- decimal keyboard hint; validation handled by JS -->
                   <input id="weightKg" type="text" inputmode="decimal" autocomplete="off" placeholder="Contoh: 75 atau 60.8" />
                   <div class="unit">kg</div>
                 </div>
@@ -377,23 +386,32 @@
         <div class="results">
           <div class="big">
             <div class="k">
-              <span>Ringkasan (rentang BMI normal — Asia-Pasifik)</span>
+              <span>Berat ideal (Broca Index)</span>
               <span id="miniMeta" class="mono">—</span>
             </div>
-            <div class="v mono" id="bmiRangeBig">—</div>
+            <div class="v mono" id="idealBig">—</div>
           </div>
 
           <div class="item">
             <div class="left">
-              <div class="name">Berat badan ideal</div>
-              <div class="desc">Estimasi berat badan ideal berbasis tinggi badan</div>
+              <div class="name">Rumus yang dipakai</div>
+              <div class="desc" id="formulaDesc">—</div>
             </div>
-            <div class="val mono" id="devineVal">—</div>
+            <div class="val mono" id="formulaShort">—</div>
           </div>
 
+          <div class="item">
+            <div class="left">
+              <div class="name">Selisih dari berat ideal</div>
+              <div class="desc" id="diffDesc">Isi berat badan untuk melihat selisih.</div>
+            </div>
+            <div class="val mono" id="diffVal">—</div>
+          </div>
+
+          <!-- BMI CARD -->
           <div class="bmi-card" id="bmiCard">
             <div class="bmi-top">
-              <span id="bmiTitle">BMI</span>
+              <span id="bmiTitle">BMI (Asia-Pasifik)</span>
               <span class="mono" id="bmiMeta">—</span>
             </div>
 
@@ -411,7 +429,14 @@
               </div>
             </div>
 
-            <div class="bmi-msg" id="bmiMsg">—</div>
+            <div class="bmi-msg" id="bmiMsg">Isi berat badan untuk menampilkan BMI.</div>
+            <div class="bmi-foot">
+              Cutoff (Asia-Pasifik): <b>Normal</b> 18.5–22.9 • <b>Kelebihan BB</b> 23.0–24.9 • <b>Obesitas</b> ≥ 25.
+            </div>
+          </div>
+
+          <div class="actions" style="padding:0 2px;">
+            <button class="ghost" id="btnPdf" type="button" disabled>⬇️ Download PDF</button>
           </div>
 
           <div id="ageWarning" class="badge warn" style="display:none;">
@@ -419,61 +444,28 @@
           </div>
 
           <div class="footer">
-            Catatan (Asia-Pasifik): <b>Normal</b> 18.5–22.9 • <b>Kelebihan BB</b> 23.0–24.9 • <b>Obesitas</b> ≥ 25.
+            Catatan: Broca Index adalah estimasi sederhana. BMI juga indikator screening, bukan diagnosis—komposisi tubuh bisa membuat hasil “ideal” berbeda.
           </div>
         </div>
       </section>
     </div>
   </div>
 
+  <!-- jsPDF (client-side PDF download) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
   <script>
     const $ = (id) => document.getElementById(id);
 
-    // Format numbers with DOT decimal (not comma), without thousand separators.
-    // Examples: 60.8 -> "60.8", 60.0 -> "60"
+    // DOT decimal formatter (no comma)
     function fmt(n, decimals = 1){
       if (!Number.isFinite(n)) return "—";
-      const s = n.toFixed(decimals);          // always uses dot
-      // strip trailing zeros
+      const s = n.toFixed(decimals); // dot decimal
       return s.replace(/\.0+$/,"").replace(/(\.\d*[1-9])0+$/,"$1");
     }
     const kgToStr = (kg) => `${fmt(kg, 1)} kg`;
 
     const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
-    const cmToIn = (cm) => cm / 2.54;
-
-    // Devine (1974)
-    function ibwDevine(gender, inches){
-      const d = inches - 60;
-      return gender === "male" ? (50 + 2.3 * d) : (45.5 + 2.3 * d);
-    }
-
-    // BMI NORMAL range (Asia-Pasifik): 18.5–22.9
-    function bmiHealthyRangeKg(heightCm){
-      const h = heightCm / 100;
-      return { min: 18.5 * h * h, max: 22.9 * h * h };
-    }
-
-    function bmiValue(heightCm, weightKg){
-      const h = heightCm / 100;
-      return weightKg / (h * h);
-    }
-
-    // Asia-Pacific categories
-    function bmiCategoryAsiaPacific(bmi){
-      if (bmi < 18.5) return { label: "Kurus", msg: "Fokus tingkatkan asupan bergizi dan pola hidup sehat." };
-      if (bmi < 23)   return { label: "Normal", msg: "Bagus! Pertahankan pola makan & aktivitas rutin." };
-      if (bmi < 25)   return { label: "Kelebihan BB", msg: "Mulai rapikan pola makan dan tambah aktivitas harian." };
-      if (bmi < 30)   return { label: "Obesitas", msg: "Utamakan hidup sehat dan perhatikan konsumsi harian." };
-      return            { label: "Obesitas (Kelas II)", msg: "Pertimbangkan program terarah dan konsultasi tenaga kesehatan." };
-    }
-
-    // Marker position: map BMI 12..40 to 0..100 (visual only)
-    function bmiToPercent(bmi){
-      const min = 12, max = 40;
-      const p = ((bmi - min) / (max - min)) * 100;
-      return clamp(p, 0, 100);
-    }
 
     // Digits only for integer inputs
     function digitsOnly(el){
@@ -489,30 +481,50 @@
     function decimalDotOnly(el){
       el.addEventListener("input", () => {
         let v = el.value;
-
-        // convert comma to dot for convenience
         v = v.replace(/,/g, ".");
-
-        // keep digits and dots only
         v = v.replace(/[^\d.]/g, "");
-
-        // keep only first dot
         const parts = v.split(".");
-        if (parts.length > 2) {
-          v = parts[0] + "." + parts.slice(1).join("");
-        }
-
-        // limit decimals to 2 (you can change to 1 if you want)
+        if (parts.length > 2) v = parts[0] + "." + parts.slice(1).join("");
         const [a, b] = v.split(".");
         if (b !== undefined) v = a + "." + b.slice(0, 2);
-
         el.value = v;
 
-        // clear errors while typing
         el.setCustomValidity("");
         const err = $("weightErr");
         if (err) err.textContent = "";
       });
+    }
+
+    // Broca (simple):
+    // Men: (height - 100)
+    // Women: (height - 100) * 0.9
+    function brocaIdealKg(gender, heightCm){
+      const base = heightCm - 100;
+      if (gender === "female") return base * 0.9;
+      return base;
+    }
+
+    // BMI: kg / (m^2)
+    function bmiValue(heightCm, weightKg){
+      const h = heightCm / 100;
+      return weightKg / (h * h);
+    }
+
+    // Asia-Pacific categories:
+    // Underweight <18.5, Normal 18.5–22.9, Overweight 23–24.9, Obesity I 25–29.9, Obesity II >=30
+    function bmiCategoryAsiaPacific(bmi){
+      if (bmi < 18.5) return { label: "Kurus", msg: "Fokus tingkatkan asupan bergizi dan pola hidup sehat." };
+      if (bmi < 23)   return { label: "Normal", msg: "Bagus! Pertahankan pola makan & aktivitas rutin." };
+      if (bmi < 25)   return { label: "Kelebihan BB", msg: "Mulai rapikan pola makan dan tambah aktivitas harian." };
+      if (bmi < 30)   return { label: "Obesitas", msg: "Utamakan hidup sehat dan perhatikan konsumsi harian." };
+      return            { label: "Obesitas (Kelas II)", msg: "Pertimbangkan program terarah dan konsultasi tenaga kesehatan." };
+    }
+
+    // Marker position: map BMI 12..40 to 0..100 (visual only)
+    function bmiToPercent(bmi){
+      const min = 12, max = 40;
+      const p = ((bmi - min) / (max - min)) * 100;
+      return clamp(p, 0, 100);
     }
 
     const form = $("calcForm");
@@ -526,14 +538,17 @@
     digitsOnly(heightEl);
     decimalDotOnly(weightEl);
 
-    // Defaults
-    heightEl.value = "";
-    weightEl.value = "";
-
-    const bmiRangeBigEl = $("bmiRangeBig");
+    // Results elements
+    const idealBigEl = $("idealBig");
     const miniMetaEl = $("miniMeta");
-    const devineValEl = $("devineVal");
+    const formulaDescEl = $("formulaDesc");
+    const formulaShortEl = $("formulaShort");
+    const diffDescEl = $("diffDesc");
+    const diffValEl = $("diffVal");
+    const warnEl = $("ageWarning");
+    const btnPdf = $("btnPdf");
 
+    // BMI UI
     const bmiTitleEl = $("bmiTitle");
     const bmiMetaEl = $("bmiMeta");
     const bmiStatusEl = $("bmiStatus");
@@ -541,16 +556,13 @@
     const bmiMarkerEl = $("bmiMarker");
     const bmiBubbleEl = $("bmiValueBubble");
 
-    const warnEl = $("ageWarning");
+    let lastResult = null;
 
     function setError(el, msg){
       el.setCustomValidity(msg);
       el.reportValidity();
     }
-
-    function clearError(el){
-      el.setCustomValidity("");
-    }
+    function clearError(el){ el.setCustomValidity(""); }
 
     function readInt(el){
       const v = el.value.trim();
@@ -559,24 +571,23 @@
       return Number.isFinite(n) ? n : NaN;
     }
 
-    function readWeight(el){
+    function readWeightOptional(el){
       const raw = el.value.trim();
-      if (!raw) return { ok:false, value: NaN, raw };
+      if (!raw) return { ok:true, empty:true, value: NaN, raw: "" };
 
-      // Valid: "75", "60.8", "60.85" (dot only)
+      // Valid: "75", "60.8", "60.85"
       // Invalid: "60.", ".8", "60..8"
       const re = /^\d+(\.\d{1,2})?$/;
-      if (!re.test(raw)) return { ok:false, value: NaN, raw };
+      if (!re.test(raw)) return { ok:false, empty:false, value: NaN, raw };
 
       const n = Number.parseFloat(raw);
-      if (!Number.isFinite(n)) return { ok:false, value: NaN, raw };
-      return { ok:true, value: n, raw };
+      if (!Number.isFinite(n)) return { ok:false, empty:false, value: NaN, raw };
+      return { ok:true, empty:false, value: n, raw };
     }
 
     function validate(){
       const h = readInt(heightEl);
-      const wObj = readWeight(weightEl);
-      const w = wObj.value;
+      const wObj = readWeightOptional(weightEl);
 
       clearError(heightEl);
       clearError(weightEl);
@@ -591,14 +602,26 @@
         setError(weightEl, msg);
         return null;
       }
-      if (w < 20 || w > 300) {
-        const msg = "Berat badan harus 20–300 kg.";
-        if (weightErrEl) weightErrEl.textContent = msg;
-        setError(weightEl, msg);
-        return null;
+
+      if (!wObj.empty) {
+        if (wObj.value < 20 || wObj.value > 300) {
+          const msg = "Berat badan harus 20–300 kg.";
+          if (weightErrEl) weightErrEl.textContent = msg;
+          setError(weightEl, msg);
+          return null;
+        }
       }
 
-      return { heightCm: h, weightKg: w };
+      return { heightCm: h, weightKg: wObj.empty ? null : wObj.value };
+    }
+
+    function setBmiEmpty(heightCm, gender){
+      bmiTitleEl.textContent = "BMI (Asia-Pasifik)";
+      bmiMetaEl.textContent = `${heightCm} cm • ${gender === "male" ? "Pria" : "Wanita"} • Berat: —`;
+      bmiStatusEl.textContent = "—";
+      bmiBubbleEl.textContent = "—";
+      bmiMarkerEl.style.left = "50%";
+      bmiMsgEl.textContent = "Isi berat badan untuk menampilkan BMI.";
     }
 
     function calculate(){
@@ -610,34 +633,73 @@
 
       const { heightCm, weightKg } = v;
 
-      // Summary meta (height integer)
+      const ideal = brocaIdealKg(gender, heightCm);
+
       miniMetaEl.textContent = `${heightCm} cm • ${gender === "male" ? "Pria" : "Wanita"}`;
+      idealBigEl.textContent = kgToStr(ideal);
 
-      // BMI normal range (Asia-Pasifik)
-      const r = bmiHealthyRangeKg(heightCm);
-      bmiRangeBigEl.textContent = `${kgToStr(r.min)} – ${kgToStr(r.max)}`;
+      if (gender === "male") {
+        formulaDescEl.textContent = "Pria: Berat ideal = (Tinggi badan − 100).";
+        formulaShortEl.textContent = "TB−100";
+      } else {
+        formulaDescEl.textContent = "Wanita: Berat ideal = (Tinggi badan − 100) × 0.9.";
+        formulaShortEl.textContent = "(TB−100)×0.9";
+      }
 
-      // Devine
-      const inches = cmToIn(heightCm);
-      const dev = Math.round(ibwDevine(gender, inches) * 10) / 10;
-      devineValEl.textContent = kgToStr(dev);
+      // Diff
+      if (weightKg == null) {
+        diffValEl.textContent = "—";
+        diffDescEl.textContent = "Isi berat badan untuk melihat selisih.";
+      } else {
+        const diff = weightKg - ideal; // + berarti di atas ideal
+        const abs = Math.abs(diff);
+        if (abs < 0.05) {
+          diffValEl.textContent = "0";
+          diffDescEl.textContent = "Berat kamu sangat dekat dengan estimasi ideal.";
+        } else if (diff > 0) {
+          diffValEl.textContent = `+${kgToStr(abs)}`;
+          diffDescEl.textContent = "Berat kamu di atas estimasi ideal (versi Broca).";
+        } else {
+          diffValEl.textContent = `-${kgToStr(abs)}`;
+          diffDescEl.textContent = "Berat kamu di bawah estimasi ideal (versi Broca).";
+        }
+      }
 
-      // BMI card
-      const bmi = bmiValue(heightCm, weightKg);
-      const bmiRound = Math.round(bmi * 10) / 10;
-      const cat = bmiCategoryAsiaPacific(bmiRound);
+      // BMI (only if weight exists)
+      if (weightKg == null) {
+        setBmiEmpty(heightCm, gender);
+      } else {
+        const bmi = bmiValue(heightCm, weightKg);
+        const bmiRound = Math.round(bmi * 10) / 10;
+        const cat = bmiCategoryAsiaPacific(bmiRound);
 
-      bmiTitleEl.textContent = `BMI untuk ${gender === "male" ? "Laki-laki" : "Perempuan"}`;
-      bmiMetaEl.textContent = `Tinggi ${heightCm} cm • Berat ${fmt(weightKg, 1)} kg`;
-      bmiStatusEl.textContent = `${fmt(bmiRound, 1)} • ${cat.label}`;
-      bmiMsgEl.textContent = cat.msg;
+        bmiTitleEl.textContent = `BMI (Asia-Pasifik)`;
+        bmiMetaEl.textContent = `Tinggi ${heightCm} cm • Berat ${fmt(weightKg, 1)} kg`;
+        bmiStatusEl.textContent = `${fmt(bmiRound, 1)} • ${cat.label}`;
+        bmiMsgEl.textContent = cat.msg;
 
-      bmiBubbleEl.textContent = fmt(bmiRound, 1);
-      bmiMarkerEl.style.left = `${bmiToPercent(bmiRound)}%`;
+        bmiBubbleEl.textContent = fmt(bmiRound, 1);
+        bmiMarkerEl.style.left = `${bmiToPercent(bmiRound)}%`;
+      }
 
       // Age warning
       const showWarn = Number.isFinite(age) && age > 0 && age < 18;
       warnEl.style.display = showWarn ? "inline-flex" : "none";
+
+      // enable PDF
+      lastResult = {
+        age: Number.isFinite(age) && age > 0 ? age : null,
+        gender: gender === "male" ? "Pria" : "Wanita",
+        heightCm,
+        weightKg,
+        idealKg: ideal,
+        diffKg: weightKg == null ? null : (weightKg - ideal),
+        bmi: weightKg == null ? null : (Math.round(bmiValue(heightCm, weightKg) * 10) / 10),
+        bmiCat: weightKg == null ? null : bmiCategoryAsiaPacific(Math.round(bmiValue(heightCm, weightKg) * 10) / 10).label,
+        formula: gender === "male" ? "TB - 100" : "(TB - 100) x 0.9",
+        createdAt: new Date()
+      };
+      btnPdf.disabled = false;
     }
 
     function resetAll(){
@@ -646,21 +708,120 @@
       heightEl.value = "";
       weightEl.value = "";
 
-      bmiRangeBigEl.textContent = "—";
       miniMetaEl.textContent = "—";
-      devineValEl.textContent = "—";
+      idealBigEl.textContent = "—";
+      formulaDescEl.textContent = "—";
+      formulaShortEl.textContent = "—";
+      diffValEl.textContent = "—";
+      diffDescEl.textContent = "Isi berat badan untuk melihat selisih.";
 
-      bmiTitleEl.textContent = "BMI";
+      bmiTitleEl.textContent = "BMI (Asia-Pasifik)";
       bmiMetaEl.textContent = "—";
       bmiStatusEl.textContent = "—";
-      bmiMsgEl.textContent = "—";
+      bmiMsgEl.textContent = "Isi berat badan untuk menampilkan BMI.";
       bmiBubbleEl.textContent = "—";
       bmiMarkerEl.style.left = "50%";
 
-      if (weightErrEl) weightErrEl.textContent = "";
       warnEl.style.display = "none";
+      if (weightErrEl) weightErrEl.textContent = "";
       clearError(heightEl);
       clearError(weightEl);
+
+      lastResult = null;
+      btnPdf.disabled = true;
+    }
+
+    function pad2(n){ return String(n).padStart(2,"0"); }
+    function formatDateTime(d){
+      const yyyy = d.getFullYear();
+      const mm = pad2(d.getMonth()+1);
+      const dd = pad2(d.getDate());
+      const hh = pad2(d.getHours());
+      const mi = pad2(d.getMinutes());
+      return `${yyyy}-${mm}-${dd} ${hh}:${mi}`;
+    }
+
+    function downloadPdf(){
+      if (!lastResult) return;
+
+      const { jsPDF } = window.jspdf || {};
+      if (!jsPDF) {
+        alert("jsPDF belum termuat. Pastikan koneksi internet / CDN bisa diakses.");
+        return;
+      }
+
+      const doc = new jsPDF({ unit: "mm", format: "a4" });
+
+      const marginX = 14;
+      let y = 16;
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(16);
+      doc.text("Ideal Weight Report (Broca + BMI)", marginX, y);
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(11);
+      y += 7;
+      doc.text(`Dibuat: ${formatDateTime(lastResult.createdAt)}`, marginX, y);
+
+      y += 10;
+      doc.setFont("helvetica", "bold");
+      doc.text("Data Input", marginX, y);
+
+      doc.setFont("helvetica", "normal");
+      y += 7;
+      doc.text(`Gender: ${lastResult.gender}`, marginX, y);
+      y += 6;
+      doc.text(`Tinggi badan: ${lastResult.heightCm} cm`, marginX, y);
+      y += 6;
+      doc.text(`Umur: ${lastResult.age == null ? "-" : lastResult.age + " tahun"}`, marginX, y);
+      y += 6;
+      doc.text(`Berat badan: ${lastResult.weightKg == null ? "-" : fmt(lastResult.weightKg, 1) + " kg"}`, marginX, y);
+
+      y += 10;
+      doc.setFont("helvetica", "bold");
+      doc.text("Hasil Broca", marginX, y);
+
+      doc.setFont("helvetica", "normal");
+      y += 7;
+      doc.text(`Rumus: ${lastResult.formula}`, marginX, y);
+      y += 6;
+      doc.text(`Berat ideal (Broca): ${fmt(lastResult.idealKg, 1)} kg`, marginX, y);
+
+      y += 6;
+      if (lastResult.diffKg == null) {
+        doc.text("Selisih dari berat ideal: - (berat badan tidak diisi)", marginX, y);
+      } else {
+        const diff = lastResult.diffKg;
+        const sign = diff > 0 ? "+" : diff < 0 ? "-" : "";
+        doc.text(`Selisih dari berat ideal: ${sign}${fmt(Math.abs(diff), 1)} kg`, marginX, y);
+      }
+
+      y += 10;
+      doc.setFont("helvetica", "bold");
+      doc.text("Hasil BMI (Asia-Pasifik)", marginX, y);
+
+      doc.setFont("helvetica", "normal");
+      y += 7;
+      if (lastResult.bmi == null) {
+        doc.text("BMI: - (berat badan tidak diisi)", marginX, y);
+      } else {
+        doc.text(`BMI: ${fmt(lastResult.bmi, 1)} (${lastResult.bmiCat})`, marginX, y);
+        y += 6;
+        doc.text("Cutoff: Normal 18.5–22.9 | Kelebihan BB 23.0–24.9 | Obesitas ≥ 25", marginX, y);
+      }
+
+      y += 12;
+      doc.setFont("helvetica", "italic");
+      doc.setFontSize(10);
+      doc.text(
+        "Catatan: Broca Index adalah estimasi sederhana. BMI adalah indikator screening, bukan diagnosis. Konsultasikan ke tenaga kesehatan untuk rekomendasi personal.",
+        marginX, y,
+        { maxWidth: 180 }
+      );
+
+      const filename = `ideal-weight_broca-bmi_${lastResult.heightCm}cm_${lastResult.gender.toLowerCase()}_${formatDateTime(lastResult.createdAt).replace(/[: ]/g,"-")}.pdf`;
+      doc.save(filename);
     }
 
     form.addEventListener("submit", (e) => {
@@ -669,6 +830,7 @@
     });
 
     $("btnReset").addEventListener("click", resetAll);
+    $("btnPdf").addEventListener("click", downloadPdf);
   </script>
 </body>
 </html>
